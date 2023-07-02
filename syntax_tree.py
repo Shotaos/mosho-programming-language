@@ -20,6 +20,16 @@ class Root(TreeNode):
         return results
 
 
+class If(TreeNode):
+    def __init__(self, condition, body):
+        self.condition = condition
+        self.body = body
+
+    def eval(self, context):
+        if self.condition.eval(context):
+            return self.body.eval(context)
+
+
 class Statement(TreeNode):
     def __init__(self, child):
         self.child = child

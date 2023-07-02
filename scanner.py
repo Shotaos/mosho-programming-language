@@ -9,6 +9,8 @@ class TokenType(enum.Enum):
     FLOAT = enum.auto()
     LEFT_PAREN = "("
     RIGHT_PAREN = ")"
+    LEFT_CURLY_BRACE = "{"
+    RIGHT_CURLY_BRACE = "}"
     ASSIGNMENT = "="
     VARIABLE = enum.auto()
     PLUS = "+"
@@ -55,16 +57,26 @@ class MoshoScanner:
         while self.curr() is not None:
             if self.curr().isdigit():
                 result.append(self.number())
-            elif self.curr() in "()+-*/=\n":
+            elif self.curr() in "()+-*/=\n\{\}":
                 result.append(Token(self.advance()))
-            elif self.curr() in string.ascii_lowercase:
-                result.append(Token(TokenType.VARIABLE, value=self.advance()))
+            elif self.curr().isalpha():
+                word = self.identifier()
+                if word in ("if"):
+                    result.append(Token(TokenType.IF))
+                else:
+                    result.append(Token(TokenType.VARIABLE, value=word))
             elif self.curr().isspace():
                 self.advance()
             else:
                 raise ValueError(f"Invalid token: {self.curr()}")
 
         result.append(Token(TokenType.EOF))
+        return result
+
+    def identifier(self):
+        result = self.advance()
+        while self.curr() and self.curr().isalpha():
+            result += self.advance()
         return result
 
     def number(self):

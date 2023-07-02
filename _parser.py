@@ -7,6 +7,7 @@ from syntax_tree import (
     Term,
     Grouping,
     Literal,
+    If,
 )
 from scanner import TokenType
 
@@ -50,7 +51,7 @@ class MoshoParser:
             while self.peek().is_(TokenType.NEWLINE):
                 self.advance()
 
-            if self.peek(1).is_(TokenType.ASSIGNMENT):
+            if self.peek(1).is_(TokenType.ASSIGNMENT) or self.peek(0).is_(TokenType.IF):
                 root.add(self.statement())
             else:
                 root.add(self.expression())
@@ -58,7 +59,17 @@ class MoshoParser:
         return root
 
     def statement(self):
+        if self.peek(0).is_(TokenType.IF):
+            return Statement(self.if_())
         return Statement(self.assignment())
+
+    def if_(self):
+        self.advance()
+        condition = self.expression()
+        assert self.advance().is_(TokenType.LEFT_CURLY_BRACE)
+        body = self.expression()
+        assert self.advance().is_(TokenType.RIGHT_CURLY_BRACE)
+        return If(condition, body)
 
     def assignment(self):
         left = self.advance()
