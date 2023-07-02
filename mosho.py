@@ -13,18 +13,18 @@ from _token import Token, TokenType
 #   TERM -> FACTOR
 #   FACTOR -> FACTOR * GROUP | FACTOR / GROUP
 #   GROUP -> ( EXPRESSION ) | NUMBER | VARIABLE
-#   NUMBER -> 0 1 2 3 4 5 6 7 8 9 
+#   NUMBER -> 0 1 2 3 4 5 6 7 8 9
 
 
 class MoshoScanner:
     def __init__(self, data):
         self.data = data
         self.i = 0
-    
+
     def peek(self, forward=1):
         if len(self.data) > self.i + forward:
             return self.data[self.i + forward]
-    
+
     def curr(self):
         return self.peek(0)
 
@@ -45,14 +45,14 @@ class MoshoScanner:
             elif self.curr().isspace():
                 self.advance()
 
-        result.append(Token(TokenType.EOF)) 
+        result.append(Token(TokenType.EOF))
         return result
 
     def number(self):
         digits = []
         while self.curr() and (self.curr().isdigit() or self.curr() == "."):
             digits.append(self.advance())
-        return Token(TokenType.FLOAT, float(''.join(digits)))
+        return Token(TokenType.FLOAT, float("".join(digits)))
 
 
 class MoshoParser:
@@ -71,13 +71,13 @@ class MoshoParser:
 
     def parse(self):
         return self.root()
-    
+
     def root(self):
         if self.peek(1).is_(TokenType.ASSIGNMENT):
             return Root(self.statement())
 
         return Root(self.expression())
-    
+
     def statement(self):
         return Statement(self.assignment())
 
@@ -88,11 +88,11 @@ class MoshoParser:
             self.advance()
         else:
             raise ValueError()
-        
+
         right = self.expression()
 
         return Assignment(left, right)
-    
+
     def expression(self):
         return Expression(self.term())
 
@@ -105,7 +105,6 @@ class MoshoParser:
             result = Term(result, operation, right)
 
         return result
-        
 
     def factor(self):
         result = self.grouping()
@@ -116,7 +115,7 @@ class MoshoParser:
             result = Factor(result, operation, right)
 
         return result
-    
+
     def grouping(self):
         if self.peek().is_(TokenType.LEFT_PAREN):
             self.advance()
@@ -131,7 +130,7 @@ class MoshoParser:
 
     def literal(self):
         return Literal(self.advance())
-    
+
 
 def repl():
     context = {}
@@ -145,5 +144,5 @@ def repl():
                     print(result)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     repl()

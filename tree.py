@@ -1,5 +1,6 @@
 from _token import TokenType, Token
 
+
 class TreeNode:
     def eval(self, context):
         raise NotImplementedError()
@@ -8,7 +9,7 @@ class TreeNode:
 class Root(TreeNode):
     def __init__(self, children):
         self.children = [children] if isinstance(children, TreeNode) else children
-    
+
     def eval(self, context):
         results = []
         for child in self.children:
@@ -16,14 +17,14 @@ class Root(TreeNode):
         return results
 
 
-
 class Statement(TreeNode):
     def __init__(self, child):
         self.child = child
-    
+
     def eval(self, context):
         return self.child.eval(context)
-    
+
+
 class Assignment(TreeNode):
     def __init__(self, left, right):
         self.left = left
@@ -32,12 +33,14 @@ class Assignment(TreeNode):
     def eval(self, context):
         context[self.left.value] = self.right.eval(context)
 
+
 class Expression(TreeNode):
     def __init__(self, child):
         self.child = child
-    
+
     def eval(self, context):
         return self.child.eval(context)
+
 
 class Term(TreeNode):
     def __init__(self, left, operation, right):
@@ -46,7 +49,7 @@ class Term(TreeNode):
         self.right = right
 
     def eval(self, context):
-        left = self.left.eval(context) 
+        left = self.left.eval(context)
         right = self.right.eval(context)
 
         if self.operation.is_(TokenType.PLUS):
@@ -56,14 +59,15 @@ class Term(TreeNode):
 
         raise ValueError("Invalid operation")
 
+
 class Factor(TreeNode):
     def __init__(self, left, operation, right):
         self.left = left
         self.operation = operation
         self.right = right
-    
+
     def eval(self, context):
-        left = self.left.eval(context) 
+        left = self.left.eval(context)
         right = self.right.eval(context)
 
         if self.operation.is_(TokenType.MULTIPLY):
@@ -74,16 +78,13 @@ class Factor(TreeNode):
         raise ValueError("Invalid operation")
 
 
-class Grouping(TreeNode):
-    pass
-
 class Literal(TreeNode):
     def __init__(self, child):
         self.child = child
-    
+
     def eval(self, context):
         if self.child.is_(TokenType.FLOAT) or self.child.is_(TokenType.INTEGER):
             return self.child.value
-        
+
         if self.child.is_(TokenType.VARIABLE):
             return context[self.child.value]
