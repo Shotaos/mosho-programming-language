@@ -1,10 +1,19 @@
+import string
+from tree import Root, Statement, Assignment, Expression, Factor, Term, Literal
+from _token import Token, TokenType
+
 # Grammar
-#   E -> T
-#   T -> T + F | T - F
-#   T -> F
-#   F -> F * G | F / G
-#   G -> ( E ) | N
-#   N -> 0 1 2 3 4 5 6 7 8 9 
+#   ROOT -> EXPRESSION | STATEMENT
+#   STATEMENT -> ASSIGNMENT | IF
+#   ASSIGNMENT -> VARIABLE = EXPRESSION
+#   IF -> if EXPRESSION { EXPRESSION | ASSIGNMENT }
+#   VARIABLE -> a-z
+#   EXPRESSION -> TERM
+#   TERM -> TERM + FACTOR | TERM - FACTOR
+#   TERM -> FACTOR
+#   FACTOR -> FACTOR * GROUP | FACTOR / GROUP
+#   GROUP -> ( EXPRESSION ) | NUMBER | VARIABLE
+#   NUMBER -> 0 1 2 3 4 5 6 7 8 9 
 
 
 class MoshoScanner:
@@ -29,18 +38,21 @@ class MoshoScanner:
         while self.curr() is not None:
             if self.curr().isdigit():
                 result.append(self.number())
-            elif self.curr() in "()+-*/":
-                result.append(self.advance())
+            elif self.curr() in "()+-*/=":
+                result.append(Token(self.advance()))
+            elif self.curr() in string.ascii_lowercase:
+                result.append(Token(TokenType.VARIABLE, value=self.advance()))
             elif self.curr().isspace():
                 self.advance()
-        
+
+        result.append(Token(TokenType.EOF)) 
         return result
 
     def number(self):
         digits = []
         while self.curr() and (self.curr().isdigit() or self.curr() == "."):
             digits.append(self.advance())
-        return float(''.join(digits))
+        return Token(TokenType.FLOAT, float(''.join(digits)))
 
 
 class MoshoParser:
@@ -57,29 +69,40 @@ class MoshoParser:
         self.i += 1
         return res
 
-    @staticmethod
-    def create_node(type, value=None, op=None, children=list()):
-        result = {"name": type}
-        if children:
-            result["children"] = [c for c in children if c is not None]
-        
-        if value is not None:
-            result["value"] = value
-        
-        if op is not None:
-            result["op"] = op
-
-        return result
-
     def parse(self):
-        return self.create_node("ROOT", children=[self.term()])
+        return self.root()
     
+    def root(self):
+        if self.peek(1).is_(TokenType.ASSIGNMENT):
+            return Root(self.statement())
+
+        return Root(self.expression())
+    
+    def statement(self):
+        return Statement(self.assignment())
+
+    def assignment(self):
+        left = self.advance()
+
+        if self.peek().is_(TokenType.ASSIGNMENT):
+            self.advance()
+        else:
+            raise ValueError()
+        
+        right = self.expression()
+
+        return Assignment(left, right)
+    
+    def expression(self):
+        return Expression(self.term())
+
     def term(self):
         result = self.factor()
 
-        while self.peek() in ("+", "-"):
-            op = self.advance()
-            result = self.create_node("Term", op=op, children=[result, self.factor()])
+        while self.peek().is_(TokenType.PLUS) or self.peek().is_(TokenType.MINUS):
+            operation = self.advance()
+            right = self.factor()
+            result = Term(result, operation, right)
 
         return result
         
@@ -87,17 +110,18 @@ class MoshoParser:
     def factor(self):
         result = self.grouping()
 
-        while self.peek() in ("*", "/"):
-            op = self.advance()
-            result = self.create_node("Factor", op=op, children=[result, self.grouping()])
+        while self.peek().is_(TokenType.MULTIPLY) or self.peek().is_(TokenType.DIVIDE):
+            operation = self.advance()
+            right = self.grouping()
+            result = Factor(result, operation, right)
 
         return result
     
     def grouping(self):
-        if self.peek() == '(':
+        if self.peek().is_(TokenType.LEFT_PAREN):
             self.advance()
-            term = self.term()
-            if self.peek() != ')':
+            term = self.expression()
+            if not self.peek().is_(TokenType.RIGHT_PAREN):
                 raise ValueError("value error")
 
             self.advance()
@@ -106,36 +130,20 @@ class MoshoParser:
         return self.literal()
 
     def literal(self):
-        return self.create_node("Literal", value=float(self.advance()))
-
-
-def evaluate(tree):
-    if tree.get("value") is not None:
-        return
+        return Literal(self.advance())
     
-    for c in tree["children"]:
-        if c.get("value") is None:
-            evaluate(c)
-    
-    if tree["name"] in ("Term", "Factor"):
-        a, b = [n["value"] for n in tree["children"]]
-        if tree["op"] == "+":
-            tree["value"] = a + b
-        elif tree["op"] == "-":
-            tree["value"] = a - b
-        elif tree["op"] == "*":
-            tree["value"] = a * b
-        elif tree["op"] == "/":
-            tree["value"] = a / b
 
-    elif tree["name"] == "ROOT":
-        tree["value"] = tree["children"][0]["value"]
-
-    return tree["value"]
+def repl():
+    context = {}
+    while True:
+        source = input("-- mosho --> ")
+        if source:
+            tokens = MoshoScanner(source).scan()
+            tree = MoshoParser(tokens).parse()
+            for result in tree.eval(context):
+                if result:
+                    print(result)
 
 
 if __name__ == '__main__':
-    while True:
-        tokens = MoshoScanner(input("-> ")).scan()
-        tree = MoshoParser(tokens).parse()
-        print("Result:", evaluate(tree))
+    repl()
