@@ -4,6 +4,7 @@ import enum
 
 class TokenType(enum.Enum):
     IF = "if"
+    NEWLINE = "\n"
     INTEGER = enum.auto()
     FLOAT = enum.auto()
     LEFT_PAREN = "("
@@ -54,12 +55,14 @@ class MoshoScanner:
         while self.curr() is not None:
             if self.curr().isdigit():
                 result.append(self.number())
-            elif self.curr() in "()+-*/=":
+            elif self.curr() in "()+-*/=\n":
                 result.append(Token(self.advance()))
             elif self.curr() in string.ascii_lowercase:
                 result.append(Token(TokenType.VARIABLE, value=self.advance()))
             elif self.curr().isspace():
                 self.advance()
+            else:
+                raise ValueError(f"Invalid token: {self.curr()}")
 
         result.append(Token(TokenType.EOF))
         return result

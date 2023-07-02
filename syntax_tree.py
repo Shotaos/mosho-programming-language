@@ -7,8 +7,11 @@ class TreeNode:
 
 
 class Root(TreeNode):
-    def __init__(self, children):
-        self.children = [children] if isinstance(children, TreeNode) else children
+    def __init__(self, child=None):
+        self.children = [] if child is None else [child]
+
+    def add(self, node):
+        self.children.append(node)
 
     def eval(self, context):
         results = []

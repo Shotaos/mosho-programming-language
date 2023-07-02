@@ -1,3 +1,4 @@
+import sys
 from _parser import MoshoParser
 from scanner import MoshoScanner
 
@@ -14,5 +15,18 @@ def repl():
                     print(result)
 
 
+def interpret_file(filename):
+    context = {}
+    source = open(filename, "r").read()
+    tokens = MoshoScanner(source).scan()
+    tree = MoshoParser(tokens).parse()
+    for result in tree.eval(context):
+        if result:
+            print(result)
+
+
 if __name__ == "__main__":
-    repl()
+    if len(sys.argv) > 1:
+        interpret_file(sys.argv[1])
+    else:
+        repl()

@@ -43,10 +43,19 @@ class MoshoParser:
         return self.root()
 
     def root(self):
-        if self.peek(1).is_(TokenType.ASSIGNMENT):
-            return Root(self.statement())
+        root = Root()
 
-        return Root(self.expression())
+        while not self.peek().is_(TokenType.EOF):
+            # consumer newlines
+            while self.peek().is_(TokenType.NEWLINE):
+                self.advance()
+
+            if self.peek(1).is_(TokenType.ASSIGNMENT):
+                root.add(self.statement())
+            else:
+                root.add(self.expression())
+
+        return root
 
     def statement(self):
         return Statement(self.assignment())
