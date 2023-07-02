@@ -1,8 +1,8 @@
-from _token import TokenType, Token
+from scanner import TokenType
 
 
 class TreeNode:
-    def eval(self, context):
+    def eval(self, *args, **kwargs):
         raise NotImplementedError()
 
 
@@ -76,6 +76,14 @@ class Factor(TreeNode):
             return left / right
 
         raise ValueError("Invalid operation")
+
+
+class Grouping(TreeNode):
+    def __init__(self, child):
+        self.child = child
+
+    def eval(self, context):
+        return self.child.eval(context)
 
 
 class Literal(TreeNode):
