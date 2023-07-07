@@ -30,6 +30,20 @@ class If(TreeNode):
             return self.body.eval(context)
 
 
+class Body(TreeNode):
+    def __init__(self, children=None):
+        self.children = children if children else list()
+
+    def eval(self, context):
+        results = []
+        for child in self.children:
+            results.append(child.eval(context))
+        return results
+
+    def add(self, node):
+        self.children.append(node)
+
+
 class Statement(TreeNode):
     def __init__(self, child):
         self.child = child

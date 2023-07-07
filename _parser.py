@@ -5,6 +5,7 @@ from syntax_tree import (
     Expression,
     Factor,
     Term,
+    Body,
     Grouping,
     Literal,
     If,
@@ -14,9 +15,11 @@ from scanner import TokenType
 
 # Grammar
 #   ROOT -> EXPRESSION | STATEMENT
+#   FUNCTION -> mosho (VARIABLE,) { EXPRESSION }
 #   STATEMENT -> ASSIGNMENT | IF
 #   ASSIGNMENT -> VARIABLE = EXPRESSION
-#   IF -> if EXPRESSION { EXPRESSION | ASSIGNMENT }
+#   IF -> if EXPRESSION BODY
+#   BODY ->  { (EXPRESSION | ASSIGNMENT)* }
 #   VARIABLE -> a-z
 #   EXPRESSION -> TERM
 #   TERM -> TERM + FACTOR | TERM - FACTOR
@@ -64,12 +67,22 @@ class MoshoParser:
         return Statement(self.assignment())
 
     def if_(self):
-        self.advance()
+        assert self.advance().is_(TokenType.IF)
         condition = self.expression()
-        assert self.advance().is_(TokenType.LEFT_CURLY_BRACE)
-        body = self.expression()
-        assert self.advance().is_(TokenType.RIGHT_CURLY_BRACE)
+        body = self.body()
         return If(condition, body)
+
+    def body(self):
+        result = Body()
+        assert self.advance().is_(TokenType.LEFT_CURLY_BRACE)
+        while not self.peek().is_(TokenType.RIGHT_CURLY_BRACE):
+            if self.peek(1).is_(TokenType.ASSIGNMENT) or self.peek(0).is_(TokenType.IF):
+                result.add(self.statement())
+            else:
+                result.add(self.expression())
+
+        assert self.advance().is_(TokenType.RIGHT_CURLY_BRACE)
+        return result
 
     def assignment(self):
         left = self.advance()
