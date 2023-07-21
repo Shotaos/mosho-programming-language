@@ -4,6 +4,12 @@ import enum
 
 class TokenType(enum.Enum):
     IF = "if"
+    WHILE = "while"
+    EQUAL_EQUAL = "=="
+    GREATER = ">"
+    LESS = "<"
+    GREATER_EQUAL = ">="
+    LESS_EQUAL = "<="
     NEWLINE = "\n"
     INTEGER = enum.auto()
     FLOAT = enum.auto()
@@ -25,8 +31,8 @@ class Token:
         self.type = type if isinstance(type, TokenType) else TokenType(type)
         self.value = value
 
-    def is_(self, type):
-        return type == self.type
+    def is_(self, *args):
+        return any(t == self.type for t in args)
 
     def __repr__(self):
         result = str(self.type)
@@ -57,12 +63,17 @@ class MoshoScanner:
         while self.curr() is not None:
             if self.curr().isdigit():
                 result.append(self.number())
+            elif self.curr() in "<>=":
+                if self.peek() == "=":
+                    result.append(Token(self.advance() + self.advance()))
+                else:
+                    result.append(Token(self.advance()))
             elif self.curr() in "()+-*/=\n\{\}":
                 result.append(Token(self.advance()))
             elif self.curr().isalpha():
                 word = self.identifier()
-                if word in ("if"):
-                    result.append(Token(TokenType.IF))
+                if word in ("if", "while"):
+                    result.append(Token(TokenType(word)))
                 else:
                     result.append(Token(TokenType.VARIABLE, value=word))
             elif self.curr().isspace():

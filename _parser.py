@@ -9,6 +9,8 @@ from syntax_tree import (
     Grouping,
     Literal,
     If,
+    While,
+    Comparison,
 )
 from scanner import TokenType
 
@@ -19,6 +21,7 @@ from scanner import TokenType
 #   STATEMENT -> ASSIGNMENT | IF
 #   ASSIGNMENT -> VARIABLE = EXPRESSION
 #   IF -> if EXPRESSION BODY
+#   WHILE -> while EXPRESSION BODY
 #   BODY ->  { (EXPRESSION | ASSIGNMENT)* }
 #   VARIABLE -> a-z
 #   EXPRESSION -> TERM
@@ -46,6 +49,13 @@ class MoshoParser:
     def parse(self):
         return self.root()
 
+    def next_token_is_statement(self):
+        return (
+            self.peek(1).is_(TokenType.ASSIGNMENT)
+            or self.peek(0).is_(TokenType.IF)
+            or self.peek().is_(TokenType.WHILE)
+        )
+
     def root(self):
         root = Root()
 
@@ -54,7 +64,7 @@ class MoshoParser:
             while self.peek().is_(TokenType.NEWLINE):
                 self.advance()
 
-            if self.peek(1).is_(TokenType.ASSIGNMENT) or self.peek(0).is_(TokenType.IF):
+            if self.next_token_is_statement():
                 root.add(self.statement())
             else:
                 root.add(self.expression())
@@ -64,6 +74,8 @@ class MoshoParser:
     def statement(self):
         if self.peek(0).is_(TokenType.IF):
             return Statement(self.if_())
+        elif self.peek().is_(TokenType.WHILE):
+            return Statement(self.while_())
         return Statement(self.assignment())
 
     def if_(self):
@@ -72,11 +84,17 @@ class MoshoParser:
         body = self.body()
         return If(condition, body)
 
+    def while_(self):
+        assert self.advance().is_(TokenType.WHILE)
+        condition = self.expression()
+        body = self.body()
+        return While(condition, body)
+
     def body(self):
         result = Body()
         assert self.advance().is_(TokenType.LEFT_CURLY_BRACE)
         while not self.peek().is_(TokenType.RIGHT_CURLY_BRACE):
-            if self.peek(1).is_(TokenType.ASSIGNMENT) or self.peek(0).is_(TokenType.IF):
+            if self.next_token_is_statement():
                 result.add(self.statement())
             else:
                 result.add(self.expression())
@@ -97,7 +115,22 @@ class MoshoParser:
         return Assignment(left, right)
 
     def expression(self):
-        return Expression(self.term())
+        return Expression(self.comparison())
+
+    def comparison(self):
+        result = self.term()
+
+        while self.peek().is_(
+            TokenType.GREATER,
+            TokenType.GREATER_EQUAL,
+            TokenType.LESS,
+            TokenType.LESS_EQUAL,
+        ):
+            operation = self.advance()
+            right = self.term()
+            result = Comparison(result, operation, right)
+
+        return result
 
     def term(self):
         result = self.factor()

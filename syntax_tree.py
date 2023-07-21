@@ -30,6 +30,42 @@ class If(TreeNode):
             return self.body.eval(context)
 
 
+class While(TreeNode):
+    def __init__(self, condition, body):
+        self.condition = condition
+        self.body = body
+
+    def eval(self, context):
+        i = 0
+        while self.condition.eval(context):
+            if i > 10:
+                break
+            self.body.eval(context)
+            i += 1
+
+
+class Comparison(TreeNode):
+    def __init__(self, left, operation, right):
+        self.left = left
+        self.operation = operation
+        self.right = right
+
+    def eval(self, context):
+        left = self.left.eval(context)
+        right = self.right.eval(context)
+
+        if self.operation.is_(TokenType.GREATER):
+            return left > right
+        elif self.operation.is_(TokenType.GREATER_EQUAL):
+            return left >= right
+        elif self.operation.is_(TokenType.LESS):
+            return left < right
+        elif self.operation.is_(TokenType.LESS_EQUAL):
+            return left <= right
+
+        raise ValueError("Invalid operation")
+
+
 class Body(TreeNode):
     def __init__(self, children=None):
         self.children = children if children else list()

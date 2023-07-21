@@ -11,7 +11,7 @@ def repl():
             tokens = MoshoScanner(source).scan()
             tree = MoshoParser(tokens).parse()
             for result in tree.eval(context):
-                if result:
+                if result is not None:
                     print(result)
 
 
@@ -21,7 +21,7 @@ def interpret_file(filename):
     tokens = MoshoScanner(source).scan()
     tree = MoshoParser(tokens).parse()
     for result in tree.eval(context):
-        if result:
+        if result is not None:
             print(result)
 
 
