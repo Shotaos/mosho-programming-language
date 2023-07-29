@@ -36,12 +36,8 @@ class While(TreeNode):
         self.body = body
 
     def eval(self, context):
-        i = 0
         while self.condition.eval(context):
-            if i > 10:
-                break
             self.body.eval(context)
-            i += 1
 
 
 class Comparison(TreeNode):
@@ -62,6 +58,8 @@ class Comparison(TreeNode):
             return left < right
         elif self.operation.is_(TokenType.LESS_EQUAL):
             return left <= right
+        elif self.operation.is_(TokenType.EQUAL_EQUAL):
+            return left == right
 
         raise ValueError("Invalid operation")
 
@@ -159,3 +157,16 @@ class Literal(TreeNode):
 
         if self.child.is_(TokenType.VARIABLE):
             return context[self.child.value]
+
+
+class FunctionCall(TreeNode):
+    def __init__(self, name, args):
+        self.name = name
+        self.args = args
+
+    def eval(self, context):
+        if self.name.value != "print":
+            raise ValueError("Invalid function call")
+
+        for arg in self.args:
+            print(arg.eval(context))

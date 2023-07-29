@@ -10,9 +10,7 @@ def repl():
         if source:
             tokens = MoshoScanner(source).scan()
             tree = MoshoParser(tokens).parse()
-            for result in tree.eval(context):
-                if result is not None:
-                    print(result)
+            tree.eval(context)
 
 
 def interpret_file(filename):
@@ -20,9 +18,7 @@ def interpret_file(filename):
     source = open(filename, "r").read()
     tokens = MoshoScanner(source).scan()
     tree = MoshoParser(tokens).parse()
-    for result in tree.eval(context):
-        if result is not None:
-            print(result)
+    tree.eval(context)
 
 
 if __name__ == "__main__":

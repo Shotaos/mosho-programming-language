@@ -11,6 +11,7 @@ from syntax_tree import (
     If,
     While,
     Comparison,
+    FunctionCall,
 )
 from scanner import TokenType
 
@@ -104,14 +105,8 @@ class MoshoParser:
 
     def assignment(self):
         left = self.advance()
-
-        if self.peek().is_(TokenType.ASSIGNMENT):
-            self.advance()
-        else:
-            raise ValueError()
-
+        assert self.advance().is_(TokenType.ASSIGNMENT)
         right = self.expression()
-
         return Assignment(left, right)
 
     def expression(self):
@@ -125,6 +120,7 @@ class MoshoParser:
             TokenType.GREATER_EQUAL,
             TokenType.LESS,
             TokenType.LESS_EQUAL,
+            TokenType.EQUAL_EQUAL,
         ):
             operation = self.advance()
             right = self.term()
@@ -135,7 +131,7 @@ class MoshoParser:
     def term(self):
         result = self.factor()
 
-        while self.peek().is_(TokenType.PLUS) or self.peek().is_(TokenType.MINUS):
+        while self.peek().is_(TokenType.PLUS, TokenType.MINUS):
             operation = self.advance()
             right = self.factor()
             result = Term(result, operation, right)
@@ -145,7 +141,7 @@ class MoshoParser:
     def factor(self):
         result = self.grouping()
 
-        while self.peek().is_(TokenType.MULTIPLY) or self.peek().is_(TokenType.DIVIDE):
+        while self.peek().is_(TokenType.MULTIPLY, TokenType.DIVIDE):
             operation = self.advance()
             right = self.grouping()
             result = Factor(result, operation, right)
@@ -165,4 +161,17 @@ class MoshoParser:
         return self.literal()
 
     def literal(self):
+        if self.peek().is_(TokenType.VARIABLE) and self.peek(1).is_(
+            TokenType.LEFT_PAREN
+        ):
+            return self.function_call()
         return Literal(self.advance())
+
+    def function_call(self):
+        name = self.advance()
+        args = []
+        assert self.advance().is_(TokenType.LEFT_PAREN)
+        while not self.peek().is_(TokenType.RIGHT_PAREN):
+            args.append(self.expression())
+
+        return FunctionCall(name, args)
