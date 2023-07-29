@@ -12,6 +12,7 @@ from syntax_tree import (
     While,
     Comparison,
     FunctionCall,
+    FunctionDefinition,
 )
 from scanner import TokenType
 
@@ -51,20 +52,14 @@ class MoshoParser:
         return self.root()
 
     def next_token_is_statement(self):
-        return (
-            self.peek(1).is_(TokenType.ASSIGNMENT)
-            or self.peek(0).is_(TokenType.IF)
-            or self.peek().is_(TokenType.WHILE)
+        return self.peek(1).is_(TokenType.ASSIGNMENT) or self.peek().is_(
+            TokenType.IF, TokenType.WHILE, TokenType.MOSHO
         )
 
     def root(self):
         root = Root()
 
         while not self.peek().is_(TokenType.EOF):
-            # consumer newlines
-            while self.peek().is_(TokenType.NEWLINE):
-                self.advance()
-
             if self.next_token_is_statement():
                 root.add(self.statement())
             else:
@@ -77,6 +72,8 @@ class MoshoParser:
             return Statement(self.if_())
         elif self.peek().is_(TokenType.WHILE):
             return Statement(self.while_())
+        elif self.peek().is_(TokenType.MOSHO):
+            return Statement(self.function_definition())
         return Statement(self.assignment())
 
     def if_(self):
@@ -174,4 +171,26 @@ class MoshoParser:
         while not self.peek().is_(TokenType.RIGHT_PAREN):
             args.append(self.expression())
 
+        assert self.advance().is_(TokenType.RIGHT_PAREN)
+
         return FunctionCall(name, args)
+
+    def function_definition(self):
+        args = []
+        body = []
+        assert self.advance().is_(TokenType.MOSHO)
+        name = self.advance()
+        assert self.advance().is_(TokenType.COLON)
+
+        while not self.peek().is_(TokenType.LEFT_CURLY_BRACE):
+            args.append(self.advance())
+
+        assert self.advance().is_(TokenType.LEFT_CURLY_BRACE)
+        while not self.peek().is_(TokenType.RIGHT_CURLY_BRACE):
+            if self.next_token_is_statement():
+                body.append(self.statement())
+            else:
+                body.append(self.expression())
+        assert self.advance().is_(TokenType.RIGHT_CURLY_BRACE)
+
+        return FunctionDefinition(name, args, body)

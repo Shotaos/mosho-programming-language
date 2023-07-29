@@ -1,4 +1,4 @@
-from scanner import TokenType
+from scanner import TokenType, Token
 
 
 class TreeNode:
@@ -158,6 +158,8 @@ class Literal(TreeNode):
         if self.child.is_(TokenType.VARIABLE):
             return context[self.child.value]
 
+        raise ValueError("Invalid literal value")
+
 
 class FunctionCall(TreeNode):
     def __init__(self, name, args):
@@ -165,8 +167,45 @@ class FunctionCall(TreeNode):
         self.args = args
 
     def eval(self, context):
-        if self.name.value != "print":
-            raise ValueError("Invalid function call")
+        if self.name.value == "print":
+            print(*[_.eval(context) for _ in self.args])
+            return
 
-        for arg in self.args:
-            print(arg.eval(context))
+        func = context.get(self.name.value)
+
+        if func is None:
+            raise ValueError(f"Calling non existent function: {self.name.value}")
+
+        if not isinstance(func, FunctionDefinition):
+            raise ValueError(f"{self.name} is not callable")
+
+        if len(self.args) != len(func.args):
+            raise ValueError(
+                f"function {self.name} expects {len(func.args)} arguments, {len(self.args)} was given"
+            )
+
+        stack_frame = {
+            k: v for k, v in context.items() if isinstance(v, FunctionDefinition)
+        }
+
+        for i in range(len(self.args)):
+            stack_frame[func.args[i].value] = self.args[i].eval(context)
+
+        if not func.body:
+            return
+
+        for part in func.body[:-1]:
+            part.eval(stack_frame)
+
+        ret = func.body[-1].eval(stack_frame)
+        return ret
+
+
+class FunctionDefinition(TreeNode):
+    def __init__(self, name, args, body):
+        self.name = name
+        self.args = args
+        self.body = body
+
+    def eval(self, context):
+        context[self.name.value] = self

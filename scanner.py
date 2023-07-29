@@ -20,7 +20,9 @@ class TokenType(enum.Enum):
     ASSIGNMENT = "="
     VARIABLE = enum.auto()
     PLUS = "+"
+    COLON = ":"
     MINUS = "-"
+    MOSHO = "mosho"
     MULTIPLY = "*"
     DIVIDE = "/"
     EOF = enum.auto()
@@ -68,11 +70,11 @@ class MoshoScanner:
                     result.append(Token(self.advance() + self.advance()))
                 else:
                     result.append(Token(self.advance()))
-            elif self.curr() in "()+-*/=\n\{\}":
+            elif self.curr() in "()+-*/=\{\}:":
                 result.append(Token(self.advance()))
             elif self.curr().isalpha():
                 word = self.identifier()
-                if word in ("if", "while"):
+                if word in ("if", "while", "mosho"):
                     result.append(Token(TokenType(word)))
                 else:
                     result.append(Token(TokenType.VARIABLE, value=word))
